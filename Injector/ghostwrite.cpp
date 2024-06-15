@@ -181,27 +181,28 @@ void GhostWrite::WaitForAutoLock(CONTEXT* ctx) {
 }
 
 int times = 0;
+
 void GhostWrite::WriteQword(uintptr_t addr, uint64_t value) {
 	CONTEXT ctx = {};
+	ctx.ContextFlags = CONTEXT_FULL;
+	
 	thread.GetContext(&ctx, CONTEXT_FULL);
 
+	ctx.Rdx = addr;      
+	ctx.Rax = value;     
 	if (times < 3) {
 		Sleep(1000);
 		times++;
 	}
-
-	// mov qword ptr [rdx], rax
-	// ret
-	ctx.Rdx = addr;
-	ctx.Rax = value;
-	ctx.Rip = writeGadgetAddr;
-	ctx.Rsp = jmp0StackAddr; // jmp 0 --> infinite loop
+	ctx.Rip = writeGadgetAddr; 
+	ctx.Rsp = jmp0StackAddr;
 
 	assert(ctx.Rax == value && ctx.Rdx == addr);
 
 	thread.SetContext(&ctx);
 	WaitForAutoLock(&ctx);
 }
+
 
 uintptr_t GhostWrite::ReadQword(uintptr_t addr) {
 	CONTEXT ctx = {};
